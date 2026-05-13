@@ -58,27 +58,25 @@ io.on('connection', (socket) => {
   });
 });
 
-// Connect to DB and start server
-// For Vercel, we need to export the app and handle the DB connection in a way that works with serverless functions
-let isConnected = false;
-const connectToDatabase = async () => {
-  if (isConnected) return;
-  await connectDB();
-  isConnected = true;
+// Database connection middleware for serverless
+const dbMiddleware = async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Database connection error: ' + error.message });
+  }
 };
 
-// Main handler for Vercel
-module.exports = async (req, res) => {
-  await connectToDatabase();
-  return app(req, res);
-};
+app.use(dbMiddleware);
+
+// Export for Vercel
+module.exports = app;
 
 // Local development server
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
-  connectToDatabase().then(() => {
-    server.listen(PORT, () => {
-      console.log(`\n🚀 Local Server running on http://localhost:${PORT}`);
-    });
+  server.listen(PORT, () => {
+    console.log(`\n🚀 Local Server running on http://localhost:${PORT}`);
   });
 }
