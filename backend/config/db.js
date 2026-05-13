@@ -1,14 +1,22 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    if (mongoose.connection.readyState >= 1) return;
+
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('✅ MongoDB Connected Successfully');
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    throw error;
+    // Don't exit process in production/serverless
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
   }
 };
 
