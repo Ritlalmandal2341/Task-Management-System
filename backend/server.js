@@ -59,12 +59,26 @@ io.on('connection', (socket) => {
 });
 
 // Connect to DB and start server
-const PORT = process.env.PORT || 5000;
+// For Vercel, we need to export the app and handle the DB connection in a way that works with serverless functions
+let isConnected = false;
+const connectToDatabase = async () => {
+  if (isConnected) return;
+  await connectDB();
+  isConnected = true;
+};
 
-connectDB().then(() => {
-  server.listen(PORT, () => {
-    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📡 WebSocket ready`);
-    console.log(`🌐 Frontend: http://localhost:${PORT}\n`);
+// Main handler for Vercel
+module.exports = async (req, res) => {
+  await connectToDatabase();
+  return app(req, res);
+};
+
+// Local development server
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  connectToDatabase().then(() => {
+    server.listen(PORT, () => {
+      console.log(`\n🚀 Local Server running on http://localhost:${PORT}`);
+    });
   });
-});
+}
