@@ -32,6 +32,18 @@ app.use(express.urlencoded({ extended: true }));
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
+// Database connection middleware for serverless
+const dbMiddleware = async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Database connection error: ' + error.message });
+  }
+};
+
+app.use(dbMiddleware);
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -58,17 +70,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Database connection middleware for serverless
-const dbMiddleware = async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Database connection error: ' + error.message });
-  }
-};
-
-app.use(dbMiddleware);
 
 // Export for Vercel
 module.exports = app;
